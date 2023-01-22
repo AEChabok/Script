@@ -2,43 +2,50 @@
 
 # Backup Postgresql Server
 # by Amir Ezazi
-# directory postgres application path
-DUMPALL="/usr/bin/pg_dumpall"
+
+# Default Username & Password Of Mysql Application
+USERNAME=postgres
+PASSWORD=aec@2647@39294
+
+# Default Directory Postgres Application Path
+PGSQL="/usr/bin/psql"
 PGDUMP="/usr/bin/pg_dump"
-PSQL="/usr/bin/psql"
+COMPRESSOR="/usr/bin/zstd"
 
-# directory to save backups in, must be rwx by postgres user
-BASE_DIR="/mnt/db-backup/postgres-backup"
-YMD=$(date "+%Y-%m-%d")
-DIR="$BASE_DIR/$YMD"
+# Default Directory To Save Backups In, Must Be rwx By Postgres User
+BACKUPTIME=30
+BACKUPHOST=127.0.0.1
+BACKUPPATH="/home/ae/backup"
+BACKUPDATE=$(date "+%Y-%m-%d")
+BACKUPDIR="$BACKUPPATH/$BACKUPDATE"
 
-mkdir -p $DIR
-cd $DIR
+# Create Backup Directory By Date Time
+mkdir -p $BACKUPDIR
+cd $BACKUPDIR
 
-# get list of databases in system , exclude the tempate dbs
-DBS=$($PSQL -l -t | egrep -v 'template[01]' | awk '{print $1}' | grep -v "|")
+# Get List Of Databases In System, Remove The Table Header
+DATABASES=$($PGSQL -l -t | egrep -v 'template[01]' | awk '{print $1}' | grep -v "|")
 
-# first dump entire postgres database, including pg_shadow etc.
-$DUMPALL | gzip -9 > "$DIR/db.out.gz"
+# Now Loop Through Each Individual Database And Backup The Database Separately
+for DATABASE in $DATABASES; do
+    #Create Directory For Each Database
+    DIRECTORY=$(echo $DATABASE | sed 's/.*/\u&/') 
+    mkdir -p $DIRECTORY
 
-# next dump globals (roles and tablespaces) only
-$DUMPALL -g | gzip -9 > "$DIR/globals.gz"
+    DATA=$DATABASES.data.gz
+    SCHEMA=$DATABASES.schema.gz
 
-# now loop through each individual database and backup the schema and data separately
-for database in $DBS; do
-    SCHEMA=$DIR/$database.schema.gz
-    DATA=$DIR/$database.data.gz
+    # Export Data From Postgres Databases To Dump Data
+    $PGDUMP -a -h $BACKUPHOST -U $USERNAME $DATABASES | gzip -9 > ${DIRECTORY}"/"${DATABASE}"/"$DATA
 
-    # export data from postgres databases to plain text
-    $PGDUMP -C -s $database | gzip -9 > $SCHEMA
-
-    # dump data
-    $PGDUMP -a $database | gzip -9 > $DATA
+    # Export Data From Postgres Databases To Plain Text
+    $PGDUMP -C -s -h $BACKUPHOST -U $USERNAME $DATABASES | gzip -9 > ${DIRECTORY}"/"${DATABASE}"/"$SCHEMA    
 done
 
-# delete backup files older than 30 days
-OLD=$(find $BASE_DIR -type d -mtime +30)
-if [ -n "$OLD" ] ; then
-        echo deleting old backup files: $OLD
-        echo $OLD | xargs rm -rfv
+# Delete Backup Files Older Than ${BACKUPTIME} Days
+OLDBACKUP=$(find $BACKUPPATH -type d -mtime +${BACKUPTIME})
+
+if [ -n "$OLDBACKUP" ] ; then
+    echo Deleting Old Backup Files: $OLDBACKUP
+    echo $OLDBACKUP | xargs rm -rfv
 fi
