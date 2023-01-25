@@ -3,6 +3,12 @@
 # Backup MySql Server
 # by Amir Ezazi
 
+# Check User Is Root
+if [ "$EUID" -ne 0 ];then
+    echo "Please Run This Script As Root User."
+    exit 1
+fi
+
 # Default Username & Password Of Postgres Application
 USERNAME=<DB-Username>
 PASSWORD=<DB-Password>
