@@ -4,8 +4,8 @@
 # by Amir Ezazi
 
 # Default Username & Password Of Postgres Application
-USERNAME=
-PASSWORD=
+USERNAME=<DB-Username>
+PASSWORD=<DB-Password>
 
 # Default Directory Postgres Application Path
 PGSQL="/usr/bin/psql"
@@ -15,7 +15,7 @@ COMPRESSOR="/usr/bin/zstd"
 # Default Directory To Save Backups In, Must Be rwx By Postgres User
 BACKUPTIME=30
 BACKUPHOST=127.0.0.1
-BACKUPPATH=
+BACKUPPATH=<Backup-Path>
 BACKUPDATE=$(date "+%Y-%m-%d")
 BACKUPDIR="$BACKUPPATH/$BACKUPDATE"
 
